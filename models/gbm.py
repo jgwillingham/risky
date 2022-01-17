@@ -1,5 +1,7 @@
 from .abstractmodel import AbstractModel
 import numpy as np
+import pandas as pd
+
 
 class GBM(AbstractModel):
     def __init__(self):
@@ -56,7 +58,14 @@ class GBM(AbstractModel):
                         for i in range(num_steps)]
         random_walk = np.cumsum(sim_logret, axis=0)
         gbm = self.X0 * np.exp(random_walk)
-        return gbm
+        
+        sim_df = pd.DataFrame(gbm, columns=[f'{sec}-sim' \
+                        for sec in self._securities])
+        
+        #for i in range(self._num_securities):
+        #    sim_df[f'{self._securities[i]}-sim-logret'] = gbm.T[i] 
+
+        return sim_df
 
 
 
