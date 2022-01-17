@@ -90,8 +90,8 @@ class TCopula(AbstractModel):
 
 
     def jump_simulate(self, num_steps, num_iter):
-        sim_df = self.simulate(num_steps)
-        endval = sim_df[[f'{stock}-sim' for stock in self.stocks]].iloc[-1].values
+        sim_df = self.path_simulate(num_steps)
+        endval = sim_df[[f'{sec}-sim' for sec in self._securities]].iloc[-1].values
         return endval
         
 
