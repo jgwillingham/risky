@@ -11,6 +11,7 @@ class AbstractModel(ABC):
     # all child classes will have the same read-only attributes:
     _iscalibrated = False
     _historical_data = pd.DataFrame([])
+    _logret_columns = []
     _securities = []
     _num_securities = 0
 
@@ -20,6 +21,9 @@ class AbstractModel(ABC):
     @property
     def historical_data(self):
         return self._historical_data
+    @property
+    def logret_columns(self):
+        return self._logret_columns
     @property
     def securities(self):
         return self._securities
@@ -55,6 +59,8 @@ class AbstractModel(ABC):
         self._securities = dataset.columns.to_list()
         self._num_securities = len(self._securities)
         self._add_calculated_columns(self._historical_data)
+        self._logret_columns = [f'{sec}-logret' for sec in self._securities]
+
         if self._iscalibrated:
             self._iscalibrated = False
 
