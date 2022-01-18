@@ -58,6 +58,8 @@ class AbstractModel(ABC):
         """
         if not isinstance(dataset, pd.DataFrame):
             dataset = pd.DataFrame(dataset)
+        else:
+            dataset = dataset.copy()
         self._historical_data = dataset
         self._securities = dataset.columns.to_list()
         self._num_securities = len(self._securities)
