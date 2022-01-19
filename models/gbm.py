@@ -10,7 +10,7 @@ class GBM(AbstractModel):
 
     @property
     def name(self):
-        return 'GBM'
+        return 'gbm'
 
 
     def calibrate(self):
@@ -30,7 +30,7 @@ class GBM(AbstractModel):
         self._iscalibrated = True
 
 
-    def jump_simulate(self, num_steps, num_iter):
+    def simulate_jump(self, num_steps):
         """
         Simulate the security value only num_steps into the future
         but for no time in between
@@ -45,7 +45,7 @@ class GBM(AbstractModel):
         return Xt
 
 
-    def path_simulate(self, num_steps, num_iter):
+    def simulate_path(self, num_steps):
         """
         Simulate the security value for num_steps into the future
         """
@@ -61,9 +61,6 @@ class GBM(AbstractModel):
         
         sim_df = pd.DataFrame(gbm, columns=[f'{sec}-sim' \
                         for sec in self._securities])
-        
-        #for i in range(self._num_securities):
-        #    sim_df[f'{self._securities[i]}-sim-logret'] = gbm.T[i] 
 
         return sim_df
 

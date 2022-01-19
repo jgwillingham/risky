@@ -4,8 +4,12 @@ import pandas as pd
 import numpy as np
 import scipy
 from statsmodels.distributions.empirical_distribution import ECDF
+import os
 
-
+# this suppresses an annoying warning when saving simulations to h5 file
+import warnings
+from tables import NaturalNameWarning
+warnings.filterwarnings('ignore', category=NaturalNameWarning)
 
 class AbstractModel(ABC):
     """
@@ -44,13 +48,40 @@ class AbstractModel(ABC):
         pass
 
     @abstractmethod
-    def jump_simulate(self, num_steps, num_iter):
+    def simulate_jump(self, num_steps):
+        # must output simulation results in a pandas dataframe
         pass
     
     @abstractmethod
-    def path_simulate(self, num_steps, num_iter):
+    def simulate_path(self, num_steps):
+        # must output simulation results in a pandas dataframe
         pass
 
+
+
+    
+    def run_simulation(self, num_steps, num_iter, path=None):
+        if path == None:
+            path = os.getcwd()
+        filepath = lambda n: os.path.join(path, \
+                        'simulation-'+self.name+'-'+format(n,'03d')+'.h5')
+
+        n = 0
+        while os.path.isfile(filepath(n)):
+            n += 1
+        filepath = filepath(n)
+
+        h5file = pd.HDFStore(filepath)
+        h5file['historical'] = self._historical_data
+
+        for ii in range(num_iter):
+            sim_df = self.simulate_path(num_steps)
+            h5file[f'simulations/sim-{ii}'] = sim_df
+                        
+        h5file.close()
+        print(f'Simulation finished.\nSaved in {filepath}\n')
+
+    
 
     def add_historical(self, dataset):
         """

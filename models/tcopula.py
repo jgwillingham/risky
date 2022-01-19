@@ -11,7 +11,7 @@ class TCopula(AbstractModel):
 
     @property
     def name(self):
-        return 't Copula'
+        return 't-copula'
 
 
     def calibrate(self):
@@ -54,13 +54,13 @@ class TCopula(AbstractModel):
         return v.T
 
 
-    def jump_simulate(self, num_steps, num_iter):
+    def simulate_jump(self, num_steps):
         sim_df = self.path_simulate(num_steps)
         endval = sim_df[[f'{sec}-sim' for sec in self._securities]].iloc[-1].values
         return endval
         
 
-    def path_simulate(self, num_steps, num_iter):
+    def simulate_path(self, num_steps):
         """
         Simulates stock movements: the log-returns are sampled from a 
         joint distribution which has empirical marginals and t copula
