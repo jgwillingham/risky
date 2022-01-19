@@ -3,15 +3,14 @@
 class Portfolio:
     def __init__(self, positions=[]):
         self.positions = []
-        self.stakes = []
-        self.return_fns = []
+        self.payoff_fns = []
         if len(positions) != 0:
             self.build(positions)
 
 
     def build(self, positions):
         self.positions = positions
-        self.return_fns = [position.payoff for position in positions]
+        self.payoff_fns = [position.payoff for position in positions]
 
     
     def payoff(self, prices):
