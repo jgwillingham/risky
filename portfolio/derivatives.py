@@ -45,6 +45,8 @@ class Call(StockOption):
 
 class Put(StockOption):
     def __init__(self, underlying, strike, premium):
+        if isinstance(underlying, str):
+            underlying = Stock(underlying, 100)
         self._underlying = underlying
         self._strike = strike
         self._premium = premium
