@@ -50,7 +50,7 @@ class GaussianCopula(AbstractModel):
 
 
     def simulate_jump(self, num_steps):
-        sim_df = self.path_simulate(num_steps)
+        sim_df = self.simulate_path(num_steps)
         endval = sim_df[[f'{sec}-sim' for sec in self._securities]].iloc[-1].values
         return endval
 
