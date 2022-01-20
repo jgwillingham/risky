@@ -72,7 +72,7 @@ class AbstractModel(ABC):
         filepath = filepath(n)
 
         h5file = pd.HDFStore(filepath)
-        h5file['historical'] = self._historical_data
+        h5file['historical'] = self._historical_data[self._securities]
 
         for ii in range(num_iter):
             sim_df = self.simulate_path(num_steps)

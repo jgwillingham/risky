@@ -56,7 +56,7 @@ class TCopula(AbstractModel):
 
     def simulate_jump(self, num_steps):
         sim_df = self.path_simulate(num_steps)
-        endval = sim_df[[f'{sec}-sim' for sec in self._securities]].iloc[-1].values
+        endval = sim_df[self._securities].iloc[-1].values
         return endval
         
 
@@ -71,7 +71,6 @@ class TCopula(AbstractModel):
                             for i in range(self._num_securities)])
         cop_walk = np.nancumsum(logsteps, axis=1)
         walk = self.X0 * np.exp(cop_walk.T)
-        sim_df = pd.DataFrame(walk, columns=[f'{sec}-sim' \
-                            for sec in self._securities])
+        sim_df = pd.DataFrame(walk, columns=self._securities)
         
         return sim_df

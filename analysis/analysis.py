@@ -49,17 +49,21 @@ class Analysis:
         Plots a given simulation along with the historical data
         """
         sim_df = self.read_sim(sim_num)
-        plot_df = pd.concat([self.historical, sim_df], ignore_index=True)
-
-        time_steps = plot_df.index - len(self.historical)+1 # center t=0 on last real data point
+        df = pd.concat([self.historical, sim_df], ignore_index=True)
+        L = len(self.historical)
+        time_steps = df.index - L + 1 # center t=0 on last real data point
 
         fig = figure(title=f'Simulated Path {sim_num}', y_axis_label='$', x_axis_label='Time steps', \
                         plot_height=400, plot_width=800)
+
         for sec,color in zip(self.securities, self.colors):
-            fig.line(time_steps, plot_df[sec], color=color, \
+            # plot historical data
+            fig.line(time_steps[:L], df[sec][:L], color=color, \
                         width=2, legend_label=sec)
-            fig.line(time_steps, plot_df[f'{sec}-sim'], color=color,\
+            # plot simulated data
+            fig.line(time_steps[L-1:], df[sec][L-1:], color=color,\
                         width=2, alpha=0.35)
+
         fig.legend.location = 'top_left'
         show(fig)
         return fig
@@ -71,21 +75,24 @@ class Analysis:
         alongside the historical data
         """
         sim_df0 = self.read_sim(0)
-        plot_df0 = pd.concat([self.historical, sim_df0], ignore_index=True)
-        time_steps = plot_df0.index - len(self.historical)+1 # center t=0 on last real data point
+        df0 = pd.concat([self.historical, sim_df0], ignore_index=True)
+        L = len(self.historical)
+        time_steps = df0.index - L+1 # center t=0 on last real data point
 
         fig = figure(title='Simulation', y_axis_label='$', x_axis_label='Time Steps', \
                         plot_height=400, plot_width=800)
+
         for sec,color in zip(self.securities, self.colors):
-            fig.line(time_steps, plot_df0[sec], color=color, \
+            fig.line(time_steps[:L], df0[sec][:L], color=color, \
                         width=2, legend_label=sec)
-            fig.line(time_steps, plot_df0[f'{sec}-sim'], color=color,\
-                        width=2, alpha=0.35)
+            fig.line(time_steps[L-1:], df0[sec][L-1:], color=color,\
+                        width=1, alpha=0.35)
+
             for ii in range(1, self.num_iterations):
                 sim_df = self.read_sim(ii)
-                plot_df = pd.concat([self.historical, sim_df], ignore_index=True)
-                fig.line(time_steps, plot_df[f'{sec}-sim'], color=color,\
-                            width=2, alpha=0.35)
+                df = pd.concat([self.historical, sim_df], ignore_index=True)
+                fig.line(time_steps[L-1:], df[sec][L-1:], color=color,\
+                            width=1, alpha=0.35)
 
         fig.legend.location = 'top_left'
         show(fig)
