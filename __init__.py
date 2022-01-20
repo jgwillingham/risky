@@ -3,7 +3,7 @@ from .models import GBM
 from .models import GaussianCopula
 from .models import TCopula
 
-from . import plottools
+from .analysis import Analysis
 
 from .portfolio import Stock
 from .portfolio import Call
