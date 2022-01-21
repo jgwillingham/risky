@@ -45,7 +45,7 @@ class GBM(AbstractModel):
         return Xt
 
 
-    def simulate_path(self, num_steps):
+    def simulate_path(self, num_steps, return_df=False):
         """
         Simulate the security value for num_steps into the future
         """
@@ -59,9 +59,10 @@ class GBM(AbstractModel):
         random_walk = np.cumsum(sim_logret, axis=0)
         gbm = self.X0 * np.exp(random_walk)
         
-        sim_df = pd.DataFrame(gbm, columns=self._securities)
+        if return_df:
+            gbm = pd.DataFrame(gbm, columns=self._securities)
 
-        return sim_df
+        return gbm
 
 
 

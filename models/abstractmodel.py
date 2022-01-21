@@ -6,6 +6,7 @@ import scipy
 from statsmodels.distributions.empirical_distribution import ECDF
 import os
 from time import time
+import h5py
 
 # this suppresses an annoying warning when saving simulations to h5 file
 import warnings
@@ -75,14 +76,24 @@ class AbstractModel(ABC):
             n += 1
         filepath = filepath(n)
 
-        h5file = pd.HDFStore(filepath)
-        h5file['historical'] = self._historical_data[self._securities]
+        N = self.num_securities
+        simulation_size = (num_steps, N*num_iter)
 
+        simdataset = np.empty(simulation_size, dtype=float) #preallocate large array
         for ii in range(num_iter):
-            sim_df = self.simulate_path(num_steps)
-            h5file[f'simulations/sim-{ii}'] = sim_df
-                        
-        h5file.close()
+            simdataset[:, N*ii:N*(ii+1)] = self.simulate_path(num_steps)
+            
+        with h5py.File(filepath, 'w') as file:
+            L = len(self._historical_data)
+            dsh = file.create_dataset('historical', shape=(L, N), \
+                        dtype=float, data=self._historical_data[self._securities])
+            
+            dss = file.create_dataset('simulation', shape=simulation_size, \
+                        dtype=float, data=simdataset)
+            
+            dsh.attrs['securities'] = self._securities
+            dss.attrs['securities'] = self._securities
+
         end_time = time()
         print(f'Simulation finished in {round(end_time-start_time,2)} sec.\nSaved in {filepath}\n')
 

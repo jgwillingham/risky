@@ -3,7 +3,7 @@ import bokeh.palettes
 import scipy
 import numpy as np
 import pandas as pd
-from h5py import File as h5pyFile
+import h5py
 
 
 
@@ -14,56 +14,52 @@ class Analysis:
     """
     def __init__(self, filepath):
         self.filepath = filepath
-        self.historical = self.read_historical()
-        self.securities = self.get_securities()
-        self.num_securities = len(self.securities)
-        self.num_iterations = self.get_num_iterations()
+        self._fetch_information()
         self.colors = bokeh.palettes.Dark2_5
 
 
-
-    def read_historical(self):
-        historical_data = pd.read_hdf(self.filepath, 'historical')
-        return historical_data
-
-
-    def read_sim(self, sim_num):
-        sim_name = f'simulations/sim-{sim_num}'
-        sim_path = pd.read_hdf(self.filepath, sim_name)
-        return sim_path
-
-    
-    def get_securities(self):
-        sim_df = self.read_sim(0)
-        cols = sim_df.columns.to_list()
-        securities = [col.split('-')[0] for col in cols]
-        return securities
+    def _fetch_information(self):
+        with h5py.File(self.filepath) as file:
+            hist_ds = file['historical']
+            historical = hist_ds[:]
+            self.securities = hist_ds.attrs['securities']
+            self.num_securities = len(self.securities)
+            self.historical = pd.DataFrame(historical, columns=self.securities)
+            sim_ds = file['simulation']
+            self.num_iterations = sim_ds.shape[1]//self.num_securities
 
 
-    def get_num_iterations(self):
-        with h5pyFile(self.filepath) as h5file:
-            simulations = h5file['simulations'].keys()
-            num_iterations = len(simulations)
-        return num_iterations
+
+    def read_sim_df(self, sim_num):
+        ii = sim_num
+        N = self.num_securities
+        with h5py.File(self.filepath, 'r') as file:
+            sim_path = file['simulation'][:,ii*N:(ii+1)*N]
+        sim_df = pd.DataFrame(sim_path,columns=self.securities)
+        return sim_df
 
 
-    def get_section(self, time_step):
+    def get_section_df(self, time_step):
         """
         Returns all simulation results for a single future time step.
         A "cross section" of the simulation results
         """
-        df = pd.DataFrame(columns=self.securities)
-        for sec in self.securities:
-            df[sec] = pd.Series([self.read_sim(ii)[sec][time_step] \
-                    for ii in range(self.num_iterations)])  
-        return df
+        with h5py.File(self.filepath, 'r') as file:
+            cross_section = file['simulation'][time_step,:]
+
+        section_df = pd.DataFrame()
+        N = self.num_securities
+        for jj in range(N):
+            sec = self.securities[jj]
+            section_df[sec] = cross_section[jj::N] # jump by N steps for each security
+        return section_df
     
 
     def plot_sim(self, sim_num):
         """
         Plots a given simulation along with the historical data
         """
-        sim_df = self.read_sim(sim_num)
+        sim_df = self.read_sim_df(sim_num)
         df = pd.concat([self.historical, sim_df], ignore_index=True)
         L = len(self.historical)
         time_steps = df.index - L + 1 # center t=0 on last real data point
@@ -89,7 +85,7 @@ class Analysis:
         Plots all simulations in the provided simulation dataset 
         alongside the historical data
         """
-        sim_df0 = self.read_sim(0)
+        sim_df0 = self.read_sim_df(0)
         df0 = pd.concat([self.historical, sim_df0], ignore_index=True)
         L = len(self.historical)
         time_steps = df0.index - L+1 # center t=0 on last real data point
@@ -106,7 +102,7 @@ class Analysis:
             fig.line(time_steps[L-1:], df0[sec][L-1:], color=color,\
                         width=1, alpha=0.35)
             for ii in range(1, self.num_iterations):
-                sim_df = self.read_sim(ii)
+                sim_df = self.read_sim_df(ii)
                 df = pd.concat([self.historical, sim_df], ignore_index=True)
                 fig.line(time_steps[L-1:], df[sec][L-1:], color=color,\
                             width=1, alpha=0.35)
@@ -119,7 +115,7 @@ class Analysis:
 
     def plot_distributions(self, time_step, kde=True):
 
-        df = self.get_section(time_step)
+        df = self.get_section_df(time_step)
 
         fig = figure(title=f'Price Distribution After {time_step} Steps ({self.num_iterations} iterations)',\
                      x_axis_label='$', plot_height=400, plot_width=600)

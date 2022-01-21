@@ -60,7 +60,7 @@ class TCopula(AbstractModel):
         return endval
         
 
-    def simulate_path(self, num_steps):
+    def simulate_path(self, num_steps, return_df=False):
         """
         Simulates stock movements: the log-returns are sampled from a 
         joint distribution which has empirical marginals and t copula
@@ -71,6 +71,8 @@ class TCopula(AbstractModel):
                             for i in range(self._num_securities)])
         cop_walk = np.nancumsum(logsteps, axis=1)
         walk = self.X0 * np.exp(cop_walk.T)
-        sim_df = pd.DataFrame(walk, columns=self._securities)
+
+        if return_df:
+            walk = pd.DataFrame(walk, columns=self._securities)
         
-        return sim_df
+        return walk
