@@ -5,11 +5,14 @@ import numpy as np
 import scipy
 from statsmodels.distributions.empirical_distribution import ECDF
 import os
+from time import time
 
 # this suppresses an annoying warning when saving simulations to h5 file
 import warnings
 from tables import NaturalNameWarning
 warnings.filterwarnings('ignore', category=NaturalNameWarning)
+
+
 
 class AbstractModel(ABC):
     """
@@ -61,6 +64,7 @@ class AbstractModel(ABC):
 
     
     def run_simulation(self, num_steps, num_iter, path=None):
+        start_time = time()
         if path == None:
             path = os.getcwd()
         filepath = lambda n: os.path.join(path, \
@@ -79,7 +83,8 @@ class AbstractModel(ABC):
             h5file[f'simulations/sim-{ii}'] = sim_df
                         
         h5file.close()
-        print(f'Simulation finished.\nSaved in {filepath}\n')
+        end_time = time()
+        print(f'Simulation finished in {round(end_time-start_time,2)} sec.\nSaved in {filepath}\n')
 
     
 
