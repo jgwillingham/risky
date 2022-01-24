@@ -8,11 +8,6 @@ import os
 from time import time
 import h5py
 
-# this suppresses an annoying warning when saving simulations to h5 file
-import warnings
-from tables import NaturalNameWarning
-warnings.filterwarnings('ignore', category=NaturalNameWarning)
-
 
 
 class AbstractModel(ABC):
@@ -53,12 +48,10 @@ class AbstractModel(ABC):
 
     @abstractmethod
     def simulate_jump(self, num_steps):
-        # must output simulation results in a pandas dataframe
         pass
     
     @abstractmethod
     def simulate_path(self, num_steps):
-        # must output simulation results in a pandas dataframe
         pass
 
 
@@ -96,6 +89,7 @@ class AbstractModel(ABC):
 
         end_time = time()
         print(f'Simulation finished in {round(end_time-start_time,2)} sec.\nSaved in {filepath}\n')
+        return filepath
 
     
 

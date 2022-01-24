@@ -1,7 +1,7 @@
 # risky
-This is a Python package for estimating a portfolio's value-at-risk (VaR) via Monte Carlo simulation. There are three types of stochastic model supported: Geometric Brownian Motion, Gaussian Copula, and Student's t Copula models. 
+This is a Python package for estimating portfolio risk metrics via Monte Carlo simulation. 
 
-Historical data must be provided to calibrate the models for simulation. Quandl is recommended but any dataset containing the price data and the tickers will do.
+For simulating price movements, three types of stochastic model are supported: geometric Brownian motion (GBM), Gaussian copula models, and t-copula models. Historical data must be provided to calibrate the models for simulation. Any dataset containing price movement data in its columns will do.
 
 ________________________________
 #### Topics:
@@ -30,9 +30,9 @@ The `add_historical` method loads the historical dataset into the object and the
 N_steps = 30     # number of steps to simulate into the future (units taken from historical data set)
 N_iter = 10000   # number of iterations to run in Monte Carlo
 
-model.run_simulation(N_steps, N_iter)  # output is saved to file
+filepath = model.run_simulation(N_steps, N_iter)  # output is saved to file
 ```
-The results of the simulation along with the historical data are stored in a HDF5 file.
+The results of the simulation along with the historical data are stored in a HDF5 file, the path to which is returned by the `run_simulation` method (`filepath` in this example). An optional argument can also specify where to save the simulation files.
 
 ________________________________
 
@@ -44,7 +44,7 @@ from risky import Stock, Call, Put, Portfolio
 
 positions = [Stock('AAPL', 50, 169.80),    # 50 shares of AAPL bought at $169.80
             Stock('GOOG', -10, 2725.81),   # 10 shares of GOOG in a short position (initially at $2725.81)
-            Call('MSFT', 310.0, 1.50),     # call option for 100 shares of MSFT with strike $330.0 and premium $1.50
+            Call('MSFT', 310.0, 1.50),     # call option for 100 shares of MSFT with strike $310.0 and premium $1.50
             Put('INTC',  50.0,  0.04)]     # put option for 100 shares of INTC with strike $50.0 and premium $0.04
             
 my_portfolio = Portfolio(positions)
@@ -55,3 +55,11 @@ ________________________________
 ## Analysis
 
 The `Analysis` class contains all the methods needed to validate the simulation model, determine portfolio risk metrics, and generally visualize the data. All the visualization is done using [Bokeh](https://bokeh.org/).
+
+With the path to a simulation file, `filepath`, a corresponding analysis is started with
+```python
+from risky import Analysis
+
+my_analysis = Analysis(filepath)
+```
+ The `Analysis` object `my_analysis` handles reading from the .h5 file with minimal RAM usage so as to prevent excessively slow performance when working with large simulations. 

@@ -26,15 +26,20 @@ class Analysis:
             self.num_securities = len(self.securities)
             self.historical = pd.DataFrame(historical, columns=self.securities)
             sim_ds = file['simulation']
+            self.num_steps = sim_ds.shape[0]
             self.num_iterations = sim_ds.shape[1]//self.num_securities
 
 
-
-    def read_sim_df(self, sim_num):
+    def read_sim(self, sim_num):
         ii = sim_num
         N = self.num_securities
         with h5py.File(self.filepath, 'r') as file:
             sim_path = file['simulation'][:,ii*N:(ii+1)*N]
+        return sim_path
+
+
+    def read_sim_df(self, sim_num):
+        sim_path = self.read_sim(sim_num)
         sim_df = pd.DataFrame(sim_path,columns=self.securities)
         return sim_df
 
@@ -85,28 +90,28 @@ class Analysis:
         Plots all simulations in the provided simulation dataset 
         alongside the historical data
         """
-        sim_df0 = self.read_sim_df(0)
-        df0 = pd.concat([self.historical, sim_df0], ignore_index=True)
         L = len(self.historical)
-        time_steps = df0.index - L+1 # center t=0 on last real data point
+        N = self.num_securities
+        index = np.array(range( L + self.num_steps ))
+        time_steps = index-L+1 # center t=0 on last real data point
 
         fig = figure(title='Simulation', y_axis_label='$', x_axis_label='Time Steps', \
                         plot_height=400, plot_width=600)
-        
-        print('Plotting . . . ', end='')
-        for sec,color in zip(self.securities, self.colors):
-            # plot historical
-            fig.line(time_steps[:L], df0[sec][:L], color=color, \
-                        width=2, legend_label=sec)
-            # plot simulations
-            fig.line(time_steps[L-1:], df0[sec][L-1:], color=color,\
-                        width=1, alpha=0.35)
-            for ii in range(1, self.num_iterations):
-                sim_df = self.read_sim_df(ii)
-                df = pd.concat([self.historical, sim_df], ignore_index=True)
-                fig.line(time_steps[L-1:], df[sec][L-1:], color=color,\
-                            width=1, alpha=0.35)
-            print('. . ', end='')
+
+        with h5py.File(self.filepath) as file:
+            simdata = file['simulation']
+            
+            print('Plotting . . . ', end='')
+            for jj,color in zip(range(N), self.colors):
+                sec = self.securities[jj]
+                # plot historical
+                fig.line(time_steps[:L], self.historical[sec][:L], color=color, \
+                            width=2, legend_label=sec)
+                # plot simulations
+                for ii in range(1, self.num_iterations):
+                    fig.line(time_steps[L:], simdata[:,ii*N+jj], color=color,\
+                                width=1, alpha=0.35)
+                print('. . ', end='')
 
         fig.legend.location = 'top_left'
         show(fig)
