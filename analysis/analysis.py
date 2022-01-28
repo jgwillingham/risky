@@ -92,7 +92,7 @@ class Analysis:
         """
         L = len(self.historical)
         N = self.num_securities
-        index = np.array(range( L + self.num_steps ))
+        index = np.arange( L + self.num_steps )
         time_steps = index-L+1 # center t=0 on last real data point
 
         fig = figure(title='Simulation', y_axis_label='$', x_axis_label='Time Steps', \
@@ -146,7 +146,7 @@ class Analysis:
 
     def fd_bins(self, data):
         """
-        Returns the number of bins for a histogram according to the Friedman-Draconis rule
+        Returns the number of bins for a histogram according to the Friedman-Diaconis rule
         """
         iqr = data.quantile(0.75) - data.quantile(0.25)
         n = len(data)
@@ -155,4 +155,62 @@ class Analysis:
         return int(num_bins)
 
 
-    
+    def get_var(self, portfolio, time_step, alpha=0.05):
+        """
+        Returns the value-at-risk (VaR) for the given portfolio
+        forecasted out to time_step. Alpha defines the worst cases.
+        e.g. alpha=0.05 means the worst 5% of cases have payoff worse than
+        VaR
+        """
+        df = self.get_section_df(time_step)
+        dataset = df.to_numpy()
+        payoffs = [portfolio.payoff(prices) for prices in dataset]
+        f = scipy.stats.gaussian_kde(payoffs)
+        inv_cdf = lambda x: f.integrate_box(-np.inf, x) - alpha
+        VaR = scipy.optimize.newton(inv_cdf, -1)
+        return VaR
+
+
+    def plot_var(self, portfolio, time_step, alpha=0.05):
+        """
+        plots the value-at-risk of the given for portfolio 
+        forecasted out to the given time-step. Returns the 
+        kernel density estimate of the payoff distribution 
+        function 
+        """
+        df = self.get_section_df(time_step)
+        dataset = df.to_numpy()
+        payoffs = [portfolio.payoff(prices) for prices in dataset]
+        f = scipy.stats.gaussian_kde(payoffs)
+        inv_cdf = lambda x: f.integrate_box(-np.inf, x) - alpha
+        VaR = scipy.optimize.newton(inv_cdf, -1)
+
+        hist, edges = np.histogram(payoffs, density=True, bins=self.fd_bins(pd.Series(payoffs)))
+        
+        neg = edges[edges < 0]
+        lneg = neg[neg < VaR]
+        uneg = neg[neg >= VaR]
+        pos = edges[edges >= 0]
+        
+        lneg = list(lneg); uneg = list(uneg)
+        
+        lneg.append(uneg[0])
+        uneg.append(pos[0])
+        
+        lneghist = hist[:len(lneg)-1]
+        uneghist = hist[len(lneg)-1:len(neg)]
+        poshist = hist[len(neg):len(hist)]
+        
+        fig = figure(title=f'Projected Returns Distribution ({self.num_iterations} iterations)', plot_height=300, plot_width=500, x_axis_label='Return')
+        fig.quad(top=lneghist, bottom=0, left=lneg[:-1], right=lneg[1:], alpha=0.5, color='darkred', legend_label=f'VaR : ${abs(np.round(VaR, 2))}')
+        fig.quad(top=uneghist, bottom=0, left=uneg[:-1], right=uneg[1:], alpha=0.5, color='red')
+        fig.quad(top=poshist, bottom=0, left=pos[:-1], right=pos[1:], alpha=0.25, color='darkgreen')
+        
+        X1 = np.linspace(1.2*min(payoffs), VaR, 500)
+        X2 = np.linspace(VaR, 1.2*max(payoffs), 500)
+        fig.line(X1, f(X1), width=3, color='darkred')
+        fig.line(X2, f(X2), width=3, color='black')
+        
+        fig.y_range.start = 0
+        show(fig)
+        return f
