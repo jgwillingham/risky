@@ -1,2 +1,2 @@
 
-from .riskyappbuilder import RiskyApp
+from .riskyappbuilder import RiskyAppBuilder
