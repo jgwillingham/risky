@@ -1,7 +1,7 @@
 # risky
 This is a Python package for estimating portfolio risk metrics via Monte Carlo simulation. 
 
-For simulating price movements, three types of stochastic model are supported: geometric Brownian motion (GBM), Gaussian copula models, and t-copula models. Historical data must be provided to calibrate the models for simulation. Any dataset containing price movement data in its columns will do.
+For running simulations, three types of stochastic model are supported: geometric Brownian motion (GBM), Gaussian copula models, and t-copula models. Historical data must be provided to calibrate for simulation. Any dataset containing price data in its columns will do. 
 
 ________________________________
 #### Topics:
@@ -49,7 +49,7 @@ positions = [Stock('AAPL', 50, 169.80),    # 50 shares of AAPL bought at $169.80
             
 my_portfolio = Portfolio(positions)
 ```
-
+The net payoff of the portfolio is computed with the `payoff` method.
 ________________________________
 
 ## Analysis
