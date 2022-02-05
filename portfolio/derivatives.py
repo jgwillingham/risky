@@ -9,6 +9,7 @@ class StockOption(ABC):
     _underlying = None
     _strike = None
     _premium = None
+    _name = None
     @property
     def underlying(self):
         if not isinstance(self._underlying, Stock):
@@ -34,6 +35,7 @@ class Call(StockOption):
         self._underlying = underlying
         self._strike = strike
         self._premium = premium
+        self._name = underlying.name
 
     def payoff(self, underlying_price):
         V = underlying_price
@@ -50,6 +52,7 @@ class Put(StockOption):
         self._underlying = underlying
         self._strike = strike
         self._premium = premium
+        self._name = underlying.name
 
     def payoff(self, underlying_price):
         V = underlying_price

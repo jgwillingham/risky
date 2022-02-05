@@ -164,14 +164,16 @@ class Analysis:
         """
         df = self.get_section_df(time_step)
         dataset = df.to_numpy()
-        payoffs = [portfolio.payoff(prices) for prices in dataset]
+        pf_prices = [self.arrange_prices_for_portfolio(prices, portfolio) \
+                        for prices in dataset]
+        payoffs = [portfolio.payoff(prices) for prices in pf_prices]
         f = scipy.stats.gaussian_kde(payoffs)
         inv_cdf = lambda x: f.integrate_box(-np.inf, x) - alpha
         VaR = scipy.optimize.newton(inv_cdf, -1)
         return VaR
 
 
-    def plot_var(self, portfolio, time_step, alpha=0.05):
+    def plot_var(self, portfolio, time_step, alpha=0.05, x0=-10):
         """
         plots the value-at-risk of the given for portfolio 
         forecasted out to the given time-step. Returns the 
@@ -180,10 +182,12 @@ class Analysis:
         """
         df = self.get_section_df(time_step)
         dataset = df.to_numpy()
-        payoffs = [portfolio.payoff(prices) for prices in dataset]
+        pf_prices = [self.arrange_prices_for_portfolio(prices, portfolio) \
+                        for prices in dataset]
+        payoffs = [portfolio.payoff(prices) for prices in pf_prices]
         f = scipy.stats.gaussian_kde(payoffs)
-        inv_cdf = lambda x: f.integrate_box(-np.inf, x) - alpha
-        VaR = scipy.optimize.newton(inv_cdf, -1)
+        cdf_alpha = lambda x: f.integrate_box(-np.inf, x) - alpha
+        VaR = scipy.optimize.newton(cdf_alpha, x0)
 
         hist, edges = np.histogram(payoffs, density=True, bins=self.fd_bins(pd.Series(payoffs)))
         
@@ -214,3 +218,10 @@ class Analysis:
         fig.y_range.start = 0
         show(fig)
         return f
+
+
+    def arrange_prices_for_portfolio(self, prices, portfolio):
+        price_dict = {sec:price for sec,price in zip(self.securities, prices)}
+        pf_prices = [price_dict[sec] for sec in portfolio.securities]
+        return pf_prices
+            
