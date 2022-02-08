@@ -154,26 +154,34 @@ class Analysis:
         num_bins = (data.max() - data.min())/bin_width
         return int(num_bins)
 
-
-    def get_var(self, portfolio, time_step, alpha=0.05):
+    
+    def payoff_pdf(self, portfolio, time_step):
         """
-        Returns the value-at-risk (VaR) for the given portfolio
-        forecasted out to time_step. Alpha defines the worst cases.
-        e.g. alpha=0.05 means the worst 5% of cases have payoff worse than
-        VaR
+        Returns a kernel density estimate of the portfolio payoff PDF
         """
         df = self.get_section_df(time_step)
         dataset = df.to_numpy()
         pf_prices = [self.arrange_prices_for_portfolio(prices, portfolio) \
                         for prices in dataset]
         payoffs = [portfolio.payoff(prices) for prices in pf_prices]
-        f = scipy.stats.gaussian_kde(payoffs)
-        inv_cdf = lambda x: f.integrate_box(-np.inf, x) - alpha
-        VaR = scipy.optimize.newton(inv_cdf, -1)
+        kde = scipy.stats.gaussian_kde(payoffs)
+        return kde
+
+
+    def value_at_risk(self, portfolio, time_step, alpha=0.05, x0=-10):
+        """
+        Returns the value-at-risk (VaR) for the given portfolio
+        forecasted out to time_step. Alpha defines the worst cases.
+        e.g. alpha=0.05 means the worst 5% of cases have payoff worse than
+        VaR
+        """
+        kde = self.payoff_pdf(portfolio, time_step)
+        inv_cdf = lambda x: kde.integrate_box(-np.inf, x) - alpha
+        VaR = scipy.optimize.newton(inv_cdf, x0)
         return VaR
 
 
-    def plot_var(self, portfolio, time_step, alpha=0.05, x0=-10):
+    def payoff_histogram(self, portfolio, time_step, alpha=0.05, x0=-10):
         """
         plots the value-at-risk of the given for portfolio 
         forecasted out to the given time-step. Returns the 
@@ -185,8 +193,9 @@ class Analysis:
         pf_prices = [self.arrange_prices_for_portfolio(prices, portfolio) \
                         for prices in dataset]
         payoffs = [portfolio.payoff(prices) for prices in pf_prices]
-        f = scipy.stats.gaussian_kde(payoffs)
-        cdf_alpha = lambda x: f.integrate_box(-np.inf, x) - alpha
+        kde = scipy.stats.gaussian_kde(payoffs)
+
+        cdf_alpha = lambda x: kde.integrate_box(-np.inf, x) - alpha
         VaR = scipy.optimize.newton(cdf_alpha, x0)
 
         hist, edges = np.histogram(payoffs, density=True, bins=self.fd_bins(pd.Series(payoffs)))
@@ -205,19 +214,20 @@ class Analysis:
         uneghist = hist[len(lneg)-1:len(neg)]
         poshist = hist[len(neg):len(hist)]
         
-        fig = figure(title=f'Projected Returns Distribution ({self.num_iterations} iterations)', plot_height=300, plot_width=500, x_axis_label='Return')
+        fig = figure(title=f'Projected Returns Distribution ({self.num_iterations} iterations)', \
+                    plot_height=400, plot_width=600, x_axis_label='Return')
         fig.quad(top=lneghist, bottom=0, left=lneg[:-1], right=lneg[1:], alpha=0.5, color='darkred', legend_label=f'VaR : ${abs(np.round(VaR, 2))}')
         fig.quad(top=uneghist, bottom=0, left=uneg[:-1], right=uneg[1:], alpha=0.5, color='red')
         fig.quad(top=poshist, bottom=0, left=pos[:-1], right=pos[1:], alpha=0.25, color='darkgreen')
         
         X1 = np.linspace(1.2*min(payoffs), VaR, 500)
         X2 = np.linspace(VaR, 1.2*max(payoffs), 500)
-        fig.line(X1, f(X1), width=3, color='darkred')
-        fig.line(X2, f(X2), width=3, color='black')
+        fig.line(X1, kde(X1), width=3, color='darkred')
+        fig.line(X2, kde(X2), width=3, color='black')
         
         fig.y_range.start = 0
         show(fig)
-        return f
+
 
 
     def arrange_prices_for_portfolio(self, prices, portfolio):
